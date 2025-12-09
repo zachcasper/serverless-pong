@@ -72,14 +72,14 @@ resource "random_password" "user_password" {
 
 # --- Networking ---
 resource "aws_memorydb_subnet_group" "subnet_group" {
-  name       = "memdb-subnets"
+  name       = "memdb-subnets-${random_id.resource.hex}"
   subnet_ids = data.aws_subnets.this.ids
   tags = { user = "zachcasper" }
 }
 
 # --- MemoryDB User and ACL ---
 resource "aws_memorydb_user" "redis_user" {
-  user_name     = "appuser"
+  user_name     = "appuser-${random_id.resource.hex}"
   access_string = "on ~* +@all"
 
   authentication_mode {
