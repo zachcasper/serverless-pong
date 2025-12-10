@@ -163,7 +163,7 @@ resource "aws_lambda_function_url" "default" {
 output "result" {
   value = {
     values = {
-      function_url  = length(aws_lambda_function_url.default) > 0 ? aws_lambda_function_url.default[0].function_url : null
+      url  = length(aws_lambda_function_url.default) > 0 ? aws_lambda_function_url.default[0].function_url : null
     }
   }
 }
