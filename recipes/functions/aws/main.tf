@@ -43,14 +43,15 @@ locals {
   connections = try(var.context.resource.connections, {})
   connection_env_vars = flatten([
     for conn_name, conn in local.connections :
-    try(conn.disableDefaultEnvVars, false) ? [] : [
-      for prop_name, prop_value in try(conn.status.computedValues, {}) : {
-        name  = upper("CONNECTION_${conn_name}_${prop_name}")
-        value = tostring(prop_value)
-      }
-    ]
+    try(conn.disableDefaultEnvVars, false)
+      ? [
+          for prop_name, prop_value in try(conn.status.computedValues, {}) : {
+            name  = upper("CONNECTION_${conn_name}_${prop_name}")
+            value = tostring(prop_value)
+          }
+        ]
+      : []
   ])
-  connection_env_map = { for env in local.connection_env_vars : env.name => env.value }
 
   vpc_id = var.vpc_id
 
@@ -79,21 +80,7 @@ locals {
   enable_function_url = try(var.context.resource.properties.enable_function_url, true)
 
   function_url_authorization_type = try(var.context.resource.properties.functionUrlAuthorizationType, "NONE")
-
-  # // TEMP: Credentials
-
-  # aws_access_key = try(var.context.resource.properties.aws_access_key, null)
-  # aws_secret_key = try(var.context.resource.properties.aws_secret_key, null)
-
-  // TODO: Add more properties: https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_function
 }
-
-# // TRY DELETE THIS BLOCK
-# provider "aws" {
-#   region = var.context.aws.region
-#   access_key = local.aws_access_key
-#   secret_key = local.aws_secret_key
-# }
 
 # IAM role for the Lambda function with basic execution permissions.
 resource "aws_iam_role" "lambda_exec" {
@@ -139,9 +126,9 @@ resource "aws_lambda_function" "container" {
   }
 
   dynamic "environment" {
-    for_each = length(local.connection_env_map) > 0 ? [1] : []
+    for_each = length(local.connection_env_vars) > 0 ? [1] : []
     content {
-      variables = local.connection_env_map
+      variables = local.connection_env_vars
     }
   }
 
