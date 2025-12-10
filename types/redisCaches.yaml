@@ -1,0 +1,64 @@
+namespace: Radius.Data
+types:
+  redisCaches:
+    description: |
+      he Radius.Data/redisCaches Resource Type deploys a Redis cache. To deploy a new cache, add the redisCaches resource to the application definition Bicep file.
+      
+      ```
+      extension radius
+      extension redisCaches
+
+      param environment string 
+
+      resource myApp 'Applications.Core/applications@2023-10-01-preview' = {
+        name: 'my-app'
+        properties: {
+          environment: environment
+        }
+      }
+      
+      resource redis 'Radius.Data/redisCaches@2025-12-08-preview' = {
+        name: 'redis'
+        properties: {
+          application: myApp.id
+          environment: environment
+          capacity: 'S' // Optional
+        }
+      }
+      ```
+    apiVersions:
+      '2023-10-01-preview':
+        schema:
+          type: object
+          properties:
+            environment:
+              type: string
+              description: (Required) The Radius Environment ID. Typically set by the rad CLI (e.g., `environment`).
+            application:
+              type: string
+              description: (Required) The Radius Application ID. For example, `myApp.id`.
+            capacity:
+              type: string
+              enum: ['S', 'M', 'L']
+              description: (Required) Container image URI for the function (public or authenticated as supported by your runtime).
+            host:
+              type: string
+              readOnly: true
+              description: (Read-only) The hostname of the Redis cluster.
+            port:
+              type: string
+              readOnly: true
+              description: (Read-only) The TCP port number to connect to.
+            tls:
+              type: boolean
+              readOnly: true
+              description: (Read-only) Whether TLS is required or not.
+            username:
+              type: string
+              readOnly: true
+              description: (Read-only) The username.
+            password:
+              type: string
+              readOnly: true
+              description: (Read-only) The password.
+          required: [environment, application]
