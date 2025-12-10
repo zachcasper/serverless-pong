@@ -11,7 +11,7 @@ resource pongApp 'Applications.Core/applications@2023-10-01-preview' = {
   }
 }
 
-resource pong 'Radius.Compute/functions@2025-12-08-preview' = {
+resource pong 'Radius.Compute/functions@2023-10-01-preview' = {
   name: 'pong'
   properties: {
     application: pongApp.id
@@ -25,7 +25,7 @@ resource pong 'Radius.Compute/functions@2025-12-08-preview' = {
   }
 }
 
-resource redis 'Radius.Data/redisCaches@2025-12-08-preview' = {
+resource redis 'Radius.Data/redisCaches@2023-10-01-preview' = {
   name: 'redis'
   properties: {
     application: pongApp.id

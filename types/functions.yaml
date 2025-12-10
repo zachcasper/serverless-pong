@@ -59,7 +59,7 @@ types:
       ```
       
     apiVersions:
-      '2025-12-08-preview':
+      '2023-10-01-preview':
         schema:
           type: object
           properties:

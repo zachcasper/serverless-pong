@@ -117,7 +117,7 @@ Image tags:
 
 ### Deploy to AWS Lambda
 
-1. **Create a kind cluster** (if testing locally):
+1. **Create a kind cluster**:
 
    ```bash
    kind create cluster --name pong
@@ -127,15 +127,16 @@ Image tags:
 
    ```bash
    rad install kubernetes 
+   ```
+
+1. **Configure AWS Environment**:
+
+   ```bash
    rad workspace create kubernetes aws
    rad group create aws
    rad group switch aws
    rad environment create aws
    rad environment switch aws
-
-1. **Configure AWS Environment**:
-
-   ```bash
    AWS_REGION=<region>
    AWS_ACCOUNTID=<account-id>
    AWS_ACCESS_KEY_ID=<access-key-id>
@@ -163,6 +164,72 @@ Image tags:
      --template-path git::https://github.com/zachcasper/serverless-pong.git//recipes/redis/aws \
      --parameters vpc_id=<vpc-id>
    ```
+
+1. **Push the container image to ECR**:
+
+  First, ensure you have a ECR repository created for pong. Then:
+
+   ```bash
+   docker tag  pong-lambda:latest <account-id>.dkr.ecr.us-east-2.amazonaws.com/pong:latest
+   docker push 817312594854.dkr.ecr.us-east-2.amazonaws.com/pong:latest
+   ```
+
+1. **Deploy the application**:
+
+   ```bash
+   rad deploy app.bicep
+   ```
+
+TODO
+
+1. **Access the application**:
+
+   ```bash
+   rad resource show Radius.Compute/functions pong -o json | jq -r '.properties.url'
+   ```
+
+   Then open the URL in your browser.
+
+### Deploy to Azure functions
+
+1. **Configure Azure**:
+
+   ```bash
+   export AZURE_SUBSCRIPTION_ID=`az account show | jq  -r '.id'`
+   export AZURE_RESOURCE_GROUP_NAME=pong
+   az group create --location southcentralus --resource-group pong
+   az ad sp create-for-rbac --role Owner --scope /subscriptions/$AZURE_SUBSCRIPTION_ID > azure-credentials.json
+   export AZURE_CLIENT_ID=`jq -r .'appId' azure-credentials.json`
+   export AZURE_CLIENT_SECRET=`jq -r .'password' azure-credentials.json`
+   export AZURE_TENANT_ID=`jq -r .'tenant' azure-credentials.json`
+   ```
+
+1. **Configure Azure Environment**:
+   
+   ```bash
+   rad group create azure
+   rad group switch azure
+   rad environment create azure
+   rad environment switch azure
+   rad environment update azure --azure-subscription-id $AZURE_SUBSCRIPTION_ID --azure-resource-group $AZURE_RESOURCE_GROUP_NAME
+   rad credential register azure sp --client-id $AZURE_CLIENT_ID  --client-secret $AZURE_CLIENT_SECRET  --tenant-id $AZURE_TENANT_ID
+   ```
+
+1. **Configure Azure Recipes**:
+
+   ```bash
+   rad recipe register  default \
+     --resource-type Radius.Compute/functions \
+     --template-kind terraform \
+     --template-path git::https://github.com/zachcasper/serverless-pong.git//recipes/functions/azure
+   rad recipe register  default \
+     --resource-type Radius.Data/redisCaches \
+     --template-kind terraform \
+     --template-path git::https://github.com/zachcasper/serverless-pong.git//recipes/redis/azure
+   ```
+
+
+TODO
 
 1. **Push the container image to ECR**:
 
