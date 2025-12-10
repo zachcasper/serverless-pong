@@ -42,7 +42,7 @@ pong/
 
 ## 🚀 Quick Start
 
-### Prerequisites
+### Requirements
 
 - Node.js 18+
 - Docker
@@ -123,13 +123,13 @@ Image tags:
    kind create cluster --name pong
    ```
 
-2. **Initialize Radius**:
+1. **Initialize Radius**:
 
    ```bash
    rad install kubernetes 
    ```
 
-3. **Configure AWS Environment**:
+1. **Configure AWS Environment**:
 
    ```bash
    rad workspace create kubernetes aws
@@ -145,7 +145,7 @@ Image tags:
    rad credential register aws access-key --access-key-id $AWS_ACCESS_KEY_ID --secret-access-key $AWS_SECRET_ACCESS_KEY
    ```
 
-4. **Configure Resource Types and Recipes**:
+1. **Configure Resource Types and Recipes**:
 
    ```bash
    rad resource-type create -f types/redisCaches.yaml
@@ -165,7 +165,7 @@ Image tags:
      --parameters vpc_id=<vpc-id>
    ```
 
-5. **Push the container image to ECR**:
+1. **Push the container image to ECR**:
 
   First, ensure you have a ECR repository created for pong. Then:
 
@@ -174,13 +174,13 @@ Image tags:
    docker push $AWS_ACCOUNTID.dkr.ecr.$AWS_REGION.amazonaws.com/pong:latest
    ```
 
-6. **Deploy the application**:
+1. **Deploy the application**:
 
    ```bash
    rad deploy app.bicep -p image=$AWS_ACCOUNTID.dkr.ecr.$AWS_REGION.amazonaws.com/pong:latest
    ```
 
-7. **Access the application**:
+1. **Access the application**:
 
    ```bash
    rad resource show Radius.Compute/functions pong -o json | jq -r '.properties.url'
@@ -202,7 +202,7 @@ Image tags:
    export AZURE_TENANT_ID=`jq -r .'tenant' azure-credentials.json`
    ```
 
-2. **Configure Azure Environment**:
+1. **Configure Azure Environment**:
 
    ```bash
    rad group create azure
@@ -213,7 +213,7 @@ Image tags:
    rad credential register azure sp --client-id $AZURE_CLIENT_ID  --client-secret $AZURE_CLIENT_SECRET  --tenant-id $AZURE_TENANT_ID
    ```
 
-3. **Configure Azure Recipes**:
+1. **Configure Azure Recipes**:
 
    ```bash
    rad recipe register  default \
@@ -226,20 +226,20 @@ Image tags:
      --template-path git::https://github.com/zachcasper/serverless-pong.git//recipes/redis/azure
    ```
 
-4. **Push the container image to GHCR**:
+1. **Push the container image to GHCR**:
 
    ```bash
    docker tag  pong-lambda:latest <account-id>.dkr.ecr.us-east-2.amazonaws.com/pong:latest
    docker push 817312594854.dkr.ecr.us-east-2.amazonaws.com/pong:latest
    ```
 
-5. **Deploy the application**:
+1. **Deploy the application**:
 
    ```bash
    rad deploy app.bicep -p image=ghcr.io/willdavsmith/radius/pong:latest
    ```
 
-6. **Access the application**:
+1. **Access the application**:
 
    ```bash
    rad resource show Radius.Compute/functions pong -o json | jq -r '.properties.url'
@@ -250,6 +250,7 @@ Image tags:
 ### What Gets Deployed
 
 The Radius deployment creates:
+
 - A pong function (managed by Radius)
 - A Redis cache (managed by Radius)
 - Automatic connection injection (Redis URL via secret)
