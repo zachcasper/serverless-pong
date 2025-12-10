@@ -16,7 +16,7 @@ This project demonstrates a truly portable serverless application:
 
 ## 📁 Project Structure
 
-```
+```text
 pong/
 ├── bicepconfig.json          # Bicep configuration
 ├── pong.bicep                # Radius deployment definition
@@ -51,12 +51,14 @@ pong/
 ### Local Development
 
 1. **Run the setup script**:
+
    ```bash
    chmod +x setup.sh
    ./setup.sh
    ```
 
 2. **Start the development server**:
+
    ```bash
    cd pong
    npm run dev
@@ -69,11 +71,15 @@ pong/
 
 ### Environment Variables
 
-The application uses the following environment variables:
+The application uses the following Redis connection environment variables:
 
-- **Local/Kubernetes**: `CONNECTION_REDIS_URL` (automatically set by Radius)
-- **AWS Lambda**: `REDIS_URL`
-- **Azure Functions**: `REDIS_URL`
+- `CONNECTION_REDIS_HOST` - Redis server hostname (default: localhost)
+- `CONNECTION_REDIS_PORT` - Redis server port (default: 6379)
+- `CONNECTION_REDIS_USERNAME` - Redis username (optional)
+- `CONNECTION_REDIS_PASSWORD` - Redis password (optional)
+- `CONNECTION_REDIS_TLS` - Enable TLS connection (boolean: 'true' or 'false')
+
+When deployed via Radius, these are automatically injected from the Redis connection.
 
 ## 🐳 Container Images
 
@@ -96,6 +102,7 @@ npm run build:all
 ```
 
 Image tags:
+
 - `pong-local:latest` - Local/Kubernetes deployment
 - `pong-lambda:latest` - AWS Lambda deployment
 - `pong-azure:latest` - Azure Functions deployment
@@ -108,41 +115,82 @@ Image tags:
 - kubectl configured for your cluster
 - kind (for local Kubernetes cluster)
 
-### Deploy to Kubernetes
+### Deploy to AWS Lambda
 
 1. **Create a kind cluster** (if testing locally):
+
    ```bash
    kind create cluster --name pong
    ```
 
-2. **Load the container image into kind**:
+1. **Initialize Radius**:
+
    ```bash
-   cd pong
-   npm run build:local
-   kind load docker-image pong-local:latest --name pong
+   rad install kubernetes 
+   rad workspace create kubernetes aws
+   rad group create aws
+   rad group switch aws
+   rad environment create aws
+   rad environment switch aws
+
+1. **Configure AWS Environment**:
+
+   ```bash
+   AWS_REGION=<region>
+   AWS_ACCOUNTID=<account-id>
+   AWS_ACCESS_KEY_ID=<access-key-id>
+   AWS_SECRET_ACCESS_KEY=<access-key>
+   rad environment update aws --aws-region $AWS_REGION --aws-account-id $AWS_ACCOUNTID
+   rad credential register aws access-key --access-key-id $AWS_ACCESS_KEY_ID --secret-access-key $AWS_SECRET_ACCESS_KEY
    ```
 
-3. **Initialize Radius**:
+1. **Configure Resource Types and Recipes**:
+
    ```bash
-   rad init
+   rad resource-type create -f types/redisCaches.yaml
+   rad resource-type create -f types/functions.yaml 
+   rad bicep publish-extension --from-file types/functions.yaml --target functions.tgz
+   rad bicep publish-extension --from-file types/redisCaches.yaml --target redisCaches.tgz
+   rad recipe register  default \
+     --resource-type Radius.Compute/functions \
+     --template-kind terraform \
+     --template-path git::https://github.com/zachcasper/serverless-pong.git//recipes/functions/aws  \
+     --parameters vpc_id=<vpc-id> \
+     --parameters security_group_id=<security-group-id>
+   rad recipe register  default \
+     --resource-type Radius.Data/redisCaches \
+     --template-kind terraform \
+     --template-path git::https://github.com/zachcasper/serverless-pong.git//recipes/redis/aws \
+     --parameters vpc_id=<vpc-id>
    ```
 
-4. **Deploy the application**:
+1. **Push the container image to ECR**:
+
+  First, ensure you have a ECR repository created for pong. Then:
+
    ```bash
-   rad deploy pong.bicep -p environment=<your-environment-id>
+   docker tag  pong-lambda:latest <account-id>.dkr.ecr.us-east-2.amazonaws.com/pong:latest
+   docker push 817312594854.dkr.ecr.us-east-2.amazonaws.com/pong:latest
    ```
 
-5. **Access the application**:
+1. **Deploy the application**:
+
    ```bash
-   kubectl port-forward svc/pong -n default-pong 3000:3000
+   rad deploy app.bicep
    ```
-   
+
+1. **Access the application**:
+
+   ```bash
+   kubectl port-forward svc/pong -n aws-pong 3000:3000
+   ```
+
    Then open `http://localhost:3000`
 
 ### What Gets Deployed
 
 The Radius deployment creates:
-- A pong container (port 3000)
+- A pong function (managed by Radius)
 - A Redis cache (managed by Radius)
 - Automatic connection injection (Redis URL via secret)
 - Kubernetes Service and Deployment resources
@@ -155,16 +203,12 @@ The Radius deployment creates:
 - **`pong/src/local.js`**: Express.js wrapper for local development and Kubernetes
 - **`pong/src/lambda.js`**: AWS Lambda handler
 - **`pong/src/azure.js`**: Azure Functions handler
-- **`pong.bicep`**: Radius application definition using `Applications.Core/containers`
-- **`recipes/functions/kubernetes/main.tf`**: Terraform recipe for Kubernetes deployment (not actively used with current Radius setup)
+- **`pong.bicep`**: Radius application definition using `Radius.Compute/functions` and `Radius.Data/redisCaches`
+- **`recipes/functions/`**: Terraform recipes for AWS Lambda, Azure Functions, and Kubernetes deployments
 
-### Key Differences Between Files
+### Redis Connection
 
-The project contains two versions of `pong.js`:
-- **`pong/src/pong.js`**: Uses `CONNECTION_REDIS_URL` (Radius convention)
-- **`src/pong.js`**: Uses `REDIS_URL` (standard convention)
-
-The `pong/src/pong.js` version is used for all deployments.
+The application in `pong/src/pong.js` uses individual connection properties (`CONNECTION_REDIS_HOST`, `CONNECTION_REDIS_PORT`, etc.) rather than a single URL. This provides flexibility for different deployment scenarios and allows explicit TLS configuration via the `CONNECTION_REDIS_TLS` environment variable.
 
 ## 🎮 How to Play
 
@@ -177,44 +221,4 @@ The `pong/src/pong.js` version is used for all deployments.
 
 ## 🔍 Troubleshooting
 
-### Game starts but ball doesn't move
-
-Check the browser console logs. The game requires:
-- Both players to be connected
-- The countdown to complete
-- Player 1 to be active (player 1 runs the ball physics)
-
-### Kind/Kubernetes image pull errors
-
-Make sure to load the image into kind after building:
-```bash
-kind load docker-image pong-local:latest --name pong
-```
-
-### Redis connection issues
-
-Check that:
-- Redis is running and accessible
-- Environment variables are set correctly
-- For Kubernetes: Check the secrets are injected: `kubectl get secrets -n default-pong`
-
-### Port-forward issues
-
-If port-forwarding fails:
-- Check the pod is running: `kubectl get pods -n default-pong`
-- Check the pod logs: `kubectl logs -n default-pong <pod-name>`
-- Verify the service: `kubectl get svc -n default-pong`
-
-## 📚 Additional Resources
-
-- [Radius Documentation](https://docs.radapp.io/)
-- [Redis Documentation](https://redis.io/documentation)
-- [Kind Documentation](https://kind.sigs.k8s.io/)
-
-## 🤝 Contributing
-
-This is a demonstration project showing serverless patterns across multiple platforms. Feel free to use it as a reference for building portable serverless applications!
-
-## 📝 License
-
-MIT
+If the game does not start, or the start button is not appearing in the player window, the application cannot connect to the Redis cluster. Examine the logs and ensure the environment variables are set correctly by Radius. Ensure the TLS boolean is correct.

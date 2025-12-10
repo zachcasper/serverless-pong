@@ -2,26 +2,62 @@ namespace: Radius.Compute
 types:
   functions:
     description: |
-      The `Radius.Compute/functions` resource type deploys a serverless function instance. Use it in your application Bicep to bind a function to an application/environment and set the image and auth behavior.
+      The `Radius.Compute/functions` Resource Type deploys a serverless function packaged as a container image. Te container image must be stored in the target platform's OCI registry. AWS Lambda required container images to be stored in ECR and Azure Functions requires container images to be stored in Azure Container registry.
+      
+      Add the Radius.Compute/functions Resource Type to an application defintiion Bicep file:
 
-      Example:
       ```
       extension radius
+      extension functions
+
       param environment string
 
-      resource myApp 'Applications.Core/Applications@2023-10-01-preview' = { ... }
+      resource myApp 'Applications.Core/applications@2023-10-01-preview' = {
+        name: 'my-app'
+        properties: {
+          environment: environment
+        }
+      }
 
-      resource fn 'Radius.Compute/functions@2025-08-01-preview' = {
-        name: 'hello-func'
+      resource myFunction 'Radius.Compute/functions@2025-12-08-preview' = {
+        name: 'my-function'
         properties: {
           application: myApp.id
           environment: environment
-          image: 'ghcr.io/your-org/hello-func:latest'
+          image: '123456789012.dkr.ecr.us-east-2.amazonaws.com/my-function:v1'
         }
       }
       ```
 
-      After deployment, the function emits a `url` property you can expose via connections or outputs.
+      After deployment, the function's URL can be retrieved via `rad resource show Radius.Compute/functions my-function -o json`.
+
+      Environment variables can automatically be created based on connected resources such as a Redis cache. For example, add a Redis cache resource and a connection to the function.
+
+      ```         
+      resource myFunction 'Radius.Compute/functions@2025-12-08-preview' = {
+        name: 'my-function'
+        properties: {
+          application: myApp.id
+          environment: environment
+          image: '123456789012.dkr.ecr.us-east-2.amazonaws.com/my-function:v1'
+          connections: {
+            redis: {
+              source: redis.id
+            }
+          }
+        }
+      }
+
+      resource redis 'Radius.Data/redisCaches@2025-12-08-preview' = {
+        name: 'redis'
+        properties: {
+          application: pongApp.id
+          environment: environment
+          capacity: 'S'
+        }
+      }
+      ```
+      
     apiVersions:
       '2025-12-08-preview':
         schema:
