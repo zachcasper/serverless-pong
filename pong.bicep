@@ -1,8 +1,8 @@
 extension radius
 extension functions
+extension redisCaches
 
 param environment string
-
 
 resource pongApp 'Applications.Core/applications@2023-10-01-preview' = {
   name: 'pong'
@@ -11,34 +11,12 @@ resource pongApp 'Applications.Core/applications@2023-10-01-preview' = {
   }
 }
 
-// resource pong 'Applications.Core/containers@2023-10-01-preview' = {
-//   name: 'pong'
-//   properties: {
-//     application: pongApp.id
-//     environment: environment
-//     container: {
-//       image: 'pong-local:latest'
-//       imagePullPolicy: 'IfNotPresent'
-//       ports: {
-//         web: {
-//           containerPort: 3000
-//         }
-//       }
-//     }
-    // connections: {
-    //   redis: {
-    //     source: redis.id
-    //   }
-//     }
-//   }
-// }
-
 resource pong 'Radius.Compute/functions@2025-12-08-preview' = {
   name: 'pong'
   properties: {
     application: pongApp.id
     environment: environment
-    image: '817312594854.dkr.ecr.us-east-2.amazonaws.com/example-lambda-container:latest'
+    image: '817312594854.dkr.ecr.us-east-2.amazonaws.com/pong:latest'
     connections: {
       redis: {
         source: redis.id
@@ -47,10 +25,11 @@ resource pong 'Radius.Compute/functions@2025-12-08-preview' = {
   }
 }
 
-resource redis 'Applications.Datastores/redisCaches@2023-10-01-preview' = {
+resource redis 'Radius.Data/redisCaches@2025-12-08-preview' = {
   name: 'redis'
   properties: {
     application: pongApp.id
     environment: environment
+    capacity: 'S'
   }
 }

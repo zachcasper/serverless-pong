@@ -41,17 +41,14 @@ data "aws_subnets" "selected" {
 
 locals {
   connections = try(var.context.resource.connections, {})
-  connection_env_vars = flatten([
-    for conn_name, conn in local.connections :
-    try(conn.disableDefaultEnvVars, false)
-      ? [
-          for prop_name, prop_value in try(conn.status.computedValues, {}) : {
-            name  = upper("CONNECTION_${conn_name}_${prop_name}")
-            value = tostring(prop_value)
-          }
-        ]
-      : []
-  ])
+  connection_env_vars = merge([
+    for conn_name, conn in local.connections : 
+    !try(conn.disableDefaultEnvVars, false) ? {
+      for prop_name, prop_value in conn :
+      upper("CONNECTION_${conn_name}_${prop_name}") => tostring(prop_value)
+      if !contains(["provisioningState", "recipe", "status"], prop_name)
+    } : {}
+  ]...)
 
   vpc_id = var.vpc_id
 

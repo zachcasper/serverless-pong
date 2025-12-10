@@ -1,6 +1,7 @@
 {
     "extensions": {
         "radius": "br:biceptypes.azurecr.io/radius:latest",
-        "functions": "functions.tgz"
+        "functions": "functions.tgz",
+        "redisCaches": "redisCaches.tgz"
     }
 }

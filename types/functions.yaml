@@ -45,6 +45,9 @@ types:
                   source:
                     type: string
                     description: (Required) The resource ID of the Secret resource.
+                  disableDefaultEnvVars:
+                    type: boolean
+                    description: (Optional) Disables the automatic injection of environment variables from connected resource properties.
                 required: [source]
             url:
               type: string

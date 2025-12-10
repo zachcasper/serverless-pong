@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node src/local.js",
     "build:local": "docker buildx build --platform linux/amd64,linux/arm64 --load -f Dockerfile.local -t pong-local:latest .",
-    "build:lambda": "docker buildx build --platform linux/amd64,linux/arm64 --load -f Dockerfile.lambda -t pong-lambda:latest .",
+    "build:lambda": "docker buildx build --platform linux/amd64 --load -f Dockerfile.lambda -t pong-lambda:latest .",
     "build:azure": "docker buildx build --platform linux/amd64,linux/arm64 --load -f Dockerfile.azure -t pong-azure:latest .",
     "build:all": "npm run build:local && npm run build:lambda && npm run build:azure"
   },
