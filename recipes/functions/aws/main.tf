@@ -80,20 +80,20 @@ locals {
 
   function_url_authorization_type = try(var.context.resource.properties.functionUrlAuthorizationType, "NONE")
 
-  // TEMP: Credentials
+  # // TEMP: Credentials
 
-  aws_access_key = try(var.context.resource.properties.aws_access_key, null)
-  aws_secret_key = try(var.context.resource.properties.aws_secret_key, null)
+  # aws_access_key = try(var.context.resource.properties.aws_access_key, null)
+  # aws_secret_key = try(var.context.resource.properties.aws_secret_key, null)
 
   // TODO: Add more properties: https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_function
 }
 
-// TRY DELETE THIS BLOCK
-provider "aws" {
-  region = var.context.aws.region
-  access_key = local.aws_access_key
-  secret_key = local.aws_secret_key
-}
+# // TRY DELETE THIS BLOCK
+# provider "aws" {
+#   region = var.context.aws.region
+#   access_key = local.aws_access_key
+#   secret_key = local.aws_secret_key
+# }
 
 # IAM role for the Lambda function with basic execution permissions.
 resource "aws_iam_role" "lambda_exec" {
