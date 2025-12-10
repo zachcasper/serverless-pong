@@ -123,13 +123,13 @@ Image tags:
    kind create cluster --name pong
    ```
 
-1. **Initialize Radius**:
+2. **Initialize Radius**:
 
    ```bash
    rad install kubernetes 
    ```
 
-1. **Configure AWS Environment**:
+3. **Configure AWS Environment**:
 
    ```bash
    rad workspace create kubernetes aws
@@ -145,7 +145,7 @@ Image tags:
    rad credential register aws access-key --access-key-id $AWS_ACCESS_KEY_ID --secret-access-key $AWS_SECRET_ACCESS_KEY
    ```
 
-1. **Configure Resource Types and Recipes**:
+4. **Configure Resource Types and Recipes**:
 
    ```bash
    rad resource-type create -f types/redisCaches.yaml
@@ -165,24 +165,22 @@ Image tags:
      --parameters vpc_id=<vpc-id>
    ```
 
-1. **Push the container image to ECR**:
+5. **Push the container image to ECR**:
 
   First, ensure you have a ECR repository created for pong. Then:
 
    ```bash
-   docker tag  pong-lambda:latest <account-id>.dkr.ecr.us-east-2.amazonaws.com/pong:latest
-   docker push 817312594854.dkr.ecr.us-east-2.amazonaws.com/pong:latest
+   docker tag  pong-lambda:latest $AWS_ACCOUNTID.dkr.ecr.$AWS_REGION.amazonaws.com/pong:latest
+   docker push $AWS_ACCOUNTID.dkr.ecr.$AWS_REGION.amazonaws.com/pong:latest
    ```
 
-1. **Deploy the application**:
+6. **Deploy the application**:
 
    ```bash
-   rad deploy app.bicep
+   rad deploy app.bicep -p image=$AWS_ACCOUNTID.dkr.ecr.$AWS_REGION.amazonaws.com/pong:latest
    ```
 
-TODO
-
-1. **Access the application**:
+7. **Access the application**:
 
    ```bash
    rad resource show Radius.Compute/functions pong -o json | jq -r '.properties.url'
@@ -204,8 +202,8 @@ TODO
    export AZURE_TENANT_ID=`jq -r .'tenant' azure-credentials.json`
    ```
 
-1. **Configure Azure Environment**:
-   
+2. **Configure Azure Environment**:
+
    ```bash
    rad group create azure
    rad group switch azure
@@ -215,44 +213,39 @@ TODO
    rad credential register azure sp --client-id $AZURE_CLIENT_ID  --client-secret $AZURE_CLIENT_SECRET  --tenant-id $AZURE_TENANT_ID
    ```
 
-1. **Configure Azure Recipes**:
+3. **Configure Azure Recipes**:
 
    ```bash
    rad recipe register  default \
      --resource-type Radius.Compute/functions \
-     --template-kind terraform \
-     --template-path git::https://github.com/zachcasper/serverless-pong.git//recipes/functions/azure
+     --template-kind bicep \
+     --template-path ghcr.io/zachcasper/radius/recipes/azure/functions:latest
    rad recipe register  default \
      --resource-type Radius.Data/redisCaches \
      --template-kind terraform \
      --template-path git::https://github.com/zachcasper/serverless-pong.git//recipes/redis/azure
    ```
 
-
-TODO
-
-1. **Push the container image to ECR**:
-
-  First, ensure you have a ECR repository created for pong. Then:
+4. **Push the container image to GHCR**:
 
    ```bash
    docker tag  pong-lambda:latest <account-id>.dkr.ecr.us-east-2.amazonaws.com/pong:latest
    docker push 817312594854.dkr.ecr.us-east-2.amazonaws.com/pong:latest
    ```
 
-1. **Deploy the application**:
+5. **Deploy the application**:
 
    ```bash
-   rad deploy app.bicep
+   rad deploy app.bicep -p image=ghcr.io/willdavsmith/radius/pong:latest
    ```
 
-1. **Access the application**:
+6. **Access the application**:
 
    ```bash
-   kubectl port-forward svc/pong -n aws-pong 3000:3000
+   rad resource show Radius.Compute/functions pong -o json | jq -r '.properties.url'
    ```
 
-   Then open `http://localhost:3000`
+   Then open the URL in your browser.
 
 ### What Gets Deployed
 

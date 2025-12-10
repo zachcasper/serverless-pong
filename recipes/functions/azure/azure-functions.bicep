@@ -4,23 +4,25 @@ param context object
 var prefix string = toLower(uniqueString('${context.resource.id}'))
 var name string = 'func${prefix}'
 
-// var location = resourceGroup().location
-var location = 'eastus'
+param location string
 
-// Extract connection data from linked resources
-var resourceConnections = context.resource.connections ?? {}
-
-// Build environment variables from connections unless explicitly disabled via disableDefaultEnvVars
-// Each connection's output values become CONNECTION_<CONNECTION_NAME>_<PROPERTY_NAME>
-var connectionEnvVars = reduce(items(resourceConnections), [], (acc, conn) => 
-  conn.value.?disableDefaultEnvVars != true
-    ? concat(acc, reduce(items(conn.value.?status.?computedValues ?? {}), [], (envAcc, prop) => 
-        concat(envAcc, [{
-          name: toUpper('CONNECTION_${conn.key}_${prop.key}')
-          value: string(prop.value)
-        }])
-      ))
-    : acc
+// Pull connection data and build env vars (CONNECTION_<CONN>_<PROP>), skipping provisioningState/recipe/status
+var connections = context.resource.?connections ?? {}
+var connectionEnvVars = flatten(
+  map(
+    filter(items(connections), conn => true),
+    conn => map(
+      filter(items(conn.value), prop => !contains([
+        'provisioningState'
+        'recipe'
+        'status'
+      ], prop.key)),
+      prop => {
+        name: toUpper('CONNECTION_${conn.key}_${prop.key}')
+        value: string(prop.value)
+      }
+    )
+  )
 )
 
 resource storage 'Microsoft.Storage/storageAccounts@2022-09-01' = {
@@ -42,14 +44,14 @@ resource plan 'Microsoft.Web/serverfarms@2023-12-01' = {
   location: location
   kind: 'functionapp'
   sku: {
-    name: 'EP1'
-    tier: 'ElasticPremium'
-    size: 'EP1'
-    family: 'EP'
+    name: 'B1'
+    tier: 'Basic'
+    size: 'B1'
+    family: 'B'
     capacity: 1
   }
   properties: {
-    reserved: true
+    reserved: false
   }
 }
 
@@ -87,10 +89,6 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
           name: 'WEBSITES_PORT'
           value: '80'
         }
-        {
-          name: 'TEST1'
-          value: 'TEST2'
-        }
       ], connectionEnvVars)
     }
   }
@@ -98,7 +96,6 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
 
 output result object = {
   values: {
-    functionURL: 'https://${functionApp.properties.defaultHostName}/${context.resource.properties.functionPath}'
+    url: 'https://${functionApp.properties.defaultHostName}'
   } 
 }
- 

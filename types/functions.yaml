@@ -29,11 +29,15 @@ types:
       }
       ```
 
-      After deployment, the function's URL can be retrieved via `rad resource show Radius.Compute/functions my-function -o json`.
+      After deployment, the function's URL can be retrieved via:
+      
+      ```
+      rad resource show Radius.Compute/functions my-function -o json
+      ```
 
       Environment variables can automatically be created based on connected resources such as a Redis cache. For example, add a Redis cache resource and a connection to the function.
 
-      ```         
+      ```
       resource myFunction 'Radius.Compute/functions@2025-12-08-preview' = {
         name: 'my-function'
         properties: {

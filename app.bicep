@@ -3,6 +3,7 @@ extension functions
 extension redisCaches
 
 param environment string
+param image string
 
 resource pongApp 'Applications.Core/applications@2023-10-01-preview' = {
   name: 'pong'
@@ -16,7 +17,7 @@ resource pong 'Radius.Compute/functions@2023-10-01-preview' = {
   properties: {
     application: pongApp.id
     environment: environment
-    image: '817312594854.dkr.ecr.us-east-2.amazonaws.com/pong:latest'
+    image: image
     connections: {
       redis: {
         source: redis.id
