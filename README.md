@@ -132,15 +132,17 @@ Image tags:
 1. **Configure AWS Environment**:
 
    ```bash
-   rad workspace create kubernetes aws
-   rad group create aws
-   rad group switch aws
-   rad environment create aws
-   rad environment switch aws
    AWS_REGION=<region>
    AWS_ACCOUNTID=<account-id>
    AWS_ACCESS_KEY_ID=<access-key-id>
    AWS_SECRET_ACCESS_KEY=<access-key>
+   AWS_VPC_ID=<vpc-id>
+   AWS_SECURITY_GROUP_ID=<security-group-id>
+   rad workspace create kubernetes aws --force
+   rad group create aws
+   rad group switch aws
+   rad environment create aws
+   rad environment switch aws
    rad environment update aws --aws-region $AWS_REGION --aws-account-id $AWS_ACCOUNTID
    rad credential register aws access-key --access-key-id $AWS_ACCESS_KEY_ID --secret-access-key $AWS_SECRET_ACCESS_KEY
    ```
@@ -156,13 +158,13 @@ Image tags:
      --resource-type Radius.Compute/functions \
      --template-kind terraform \
      --template-path git::https://github.com/zachcasper/serverless-pong.git//recipes/functions/aws  \
-     --parameters vpc_id=<vpc-id> \
-     --parameters security_group_id=<security-group-id>
+     --parameters vpc_id=$AWS_VPC_ID \
+     --parameters security_group_id=$AWS_SECURITY_GROUP_ID
    rad recipe register  default \
      --resource-type Radius.Data/redisCaches \
      --template-kind terraform \
      --template-path git::https://github.com/zachcasper/serverless-pong.git//recipes/redis/aws \
-     --parameters vpc_id=<vpc-id>
+     --parameters vpc_id=$AWS_VPC_ID
    ```
 
 1. **Push the container image to ECR**:
